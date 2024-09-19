@@ -38,17 +38,36 @@ export default {
     // 保存输入内容
     // 保存数据
     async saveInput() {
+      console.log('Save button clicked'); // 确认按钮点击事件
+      console.log('Saved entries before update:', this.savedEntries); // 确保这是一个数组
+
       if (this.userInput) {
-        const response = await fetch("/.netlify/functions/saveEntry", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ content: this.userInput }),
-        });
-        const data = await response.json();
-        this.savedEntries.push(data.entry);
-        this.userInput = "";
+        try {
+          const response = await fetch("/.netlify/functions/saveEntry", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ content: this.userInput }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            console.error('Failed to save entry:', error); // 输出错误信息
+            return;
+          }
+
+          const data = await response.json();
+          console.log('Data saved:', data); // 确认数据是否被成功保存
+          if (Array.isArray(this.savedEntries)) {
+            this.savedEntries.push(data.entry);
+          } else {
+            console.error('savedEntries is not an array'); // 如果类型不对，输出错误信息
+          }
+          this.userInput = "";
+        } catch (error) {
+          console.error('Error saving input:', error); // 捕获错误并输出
+        }
       }
     },
 

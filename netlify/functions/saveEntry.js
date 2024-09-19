@@ -24,6 +24,7 @@ exports.handler = async function (event) {
             body: JSON.stringify({ message: 'Entry saved', entry: result.data }),
         };
     } catch (error) {
-        return { statusCode: 500, body: JSON.stringify(error) };
+        console.error('Error:', error); // 添加详细错误信息
+        return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
     }
 };
