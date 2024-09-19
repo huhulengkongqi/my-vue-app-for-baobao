@@ -1,16 +1,24 @@
-const fs = require('fs');
-const path = require('path');
+const faunadb = require('faunadb');
+const q = faunadb.query;
 
-const filePath = path.resolve(__dirname, '../../entries.json');
+exports.handler = async function () {
+    const client = new faunadb.Client({ secret: process.env.FAUNA_SECRET });
 
-exports.handler = async function (event, context) {
-    let entries = [];
-    if (fs.existsSync(filePath)) {
-        entries = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    try {
+        const result = await client.query(
+            q.Map(
+                q.Paginate(q.Documents(q.Collection('entries'))),
+                q.Lambda('ref', q.Get(q.Var('ref')))
+            )
+        );
+
+        const entries = result.data.map(item => item.data);
+
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ entries }),
+        };
+    } catch (error) {
+        return { statusCode: 500, body: JSON.stringify(error) };
     }
-
-    return {
-        statusCode: 200,
-        body: JSON.stringify({ entries }),
-    };
 };

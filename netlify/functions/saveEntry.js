@@ -1,31 +1,29 @@
-const fs = require('fs');
-const path = require('path');
+const faunadb = require('faunadb');
+const q = faunadb.query;
 
-const filePath = path.resolve(__dirname, '../../entries.json');
-
-exports.handler = async function (event, context) {
+exports.handler = async function (event) {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    const { content } = JSON.parse(event.body);
-    if (!content) {
-        return { statusCode: 400, body: 'Invalid input' };
+    const data = JSON.parse(event.body);
+    const client = new faunadb.Client({ secret: process.env.FAUNA_SECRET });
+
+    try {
+        const result = await client.query(
+            q.Create(
+                q.Collection('entries'),
+                {
+                    data: { content: data.content, date: new Date().toISOString() },
+                }
+            )
+        );
+
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ message: 'Entry saved', entry: result.data }),
+        };
+    } catch (error) {
+        return { statusCode: 500, body: JSON.stringify(error) };
     }
-
-    const date = new Date().toLocaleString();
-
-    let entries = [];
-    if (fs.existsSync(filePath)) {
-        entries = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-    }
-
-    entries.push({ date, content });
-
-    fs.writeFileSync(filePath, JSON.stringify(entries));
-
-    return {
-        statusCode: 200,
-        body: JSON.stringify({ message: 'Entry saved', entries }),
-    };
 };

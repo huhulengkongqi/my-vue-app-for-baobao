@@ -1,31 +1,24 @@
-const fs = require('fs');
-const path = require('path');
+const faunadb = require('faunadb');
+const q = faunadb.query;
 
-const filePath = path.resolve(__dirname, '../../entries.json');
-
-exports.handler = async function (event, context) {
+exports.handler = async function (event) {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    const { index } = JSON.parse(event.body);
+    const data = JSON.parse(event.body);
+    const client = new faunadb.Client({ secret: process.env.FAUNA_SECRET });
 
-    if (typeof index !== 'number') {
-        return { statusCode: 400, body: 'Invalid index' };
+    try {
+        const result = await client.query(
+            q.Delete(q.Select("ref", q.Get(q.Match(q.Index("entry_by_index"), data.index))))
+        );
+
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ message: 'Entry deleted', entry: result.data }),
+        };
+    } catch (error) {
+        return { statusCode: 500, body: JSON.stringify(error) };
     }
-
-    let entries = [];
-    if (fs.existsSync(filePath)) {
-        entries = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-    }
-
-    if (index >= 0 && index < entries.length) {
-        entries.splice(index, 1); // 删除指定条目
-        fs.writeFileSync(filePath, JSON.stringify(entries));
-    }
-
-    return {
-        statusCode: 200,
-        body: JSON.stringify({ message: 'Entry deleted', entries }),
-    };
 };

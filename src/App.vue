@@ -36,34 +36,39 @@ export default {
       this.isInputVisible = true;
     },
     // 保存输入内容
+    // 保存数据
     async saveInput() {
       if (this.userInput) {
-        const response = await fetch('/.netlify/functions/saveEntry', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const response = await fetch("/.netlify/functions/saveEntry", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({ content: this.userInput }),
         });
         const data = await response.json();
-        this.savedEntries = data.entries; // 更新保存的内容
-        this.userInput = ''; // 清空输入框
-        this.isInputVisible = false; // 隐藏输入框
+        this.savedEntries.push(data.entry);
+        this.userInput = "";
       }
     },
-    // 获取已保存的内容
+
+// 获取数据
     async fetchSavedEntries() {
-      const response = await fetch('/.netlify/functions/getEntries');
+      const response = await fetch("/.netlify/functions/getEntries");
       const data = await response.json();
       this.savedEntries = data.entries;
     },
-    // 删除指定条目
+
+// 删除数据
     async deleteEntry(index) {
-      const response = await fetch('/.netlify/functions/deleteEntry', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch("/.netlify/functions/deleteEntry", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ index }),
       });
-      const data = await response.json();
-      this.savedEntries = data.entries; // 更新删除后的条目
+      this.savedEntries = this.savedEntries.filter((_, i) => i !== index);
     },
   },
 };
